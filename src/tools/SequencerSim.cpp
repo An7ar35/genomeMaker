@@ -5,34 +5,40 @@
  * @param reader          EADlib File Reader
  * @param writer          EADlib File Writer
  * @param read_length     Number of characters per reads
- * @param number_of_reads Total number of simulated reads
+ * @param read_depth Total number of simulated reads
  * @param error_rate      Error rate of the simulator on the reads (0 to 1)
  */
-genomeMaker::SequencerSim::SequencerSim( eadlib::io::FileReader &reader, eadlib::io::FileWriter &writer,
-                                         const size_t &read_length, const size_t &number_of_reads, const double &error_rate ) :
+genomeMaker::SequencerSim::SequencerSim( eadlib::io::FileReader &reader,
+                                         eadlib::io::FileWriter &writer,
+                                         genomeMaker::Randomiser &randomiser,
+                                         const size_t &read_length,
+                                         const size_t &read_depth,
+                                         const double &error_rate ) :
     _reader( reader ),
     _writer( writer ),
+    _randomiser( randomiser ),
     _read_length( read_length ),
-    _total_reads( number_of_reads ),
+    _read_depth( read_depth ),
     _error_rate( error_rate )
 {
     //Error checks
     if( _read_length < 1 || _read_length > 1000 ) {
         _read_length = 260;
-        LOG_ERROR( "[genomeMaker::SequencerSim( <Reader>, <Writer>, ", read_length, ", ", number_of_reads, ", ", error_rate, " )] "
+        LOG_ERROR( "[genomeMaker::SequencerSim( <Reader>, <Writer>, ", read_length, ", ", read_depth, ", ", error_rate, " )] "
             "Invalid read length of ", read_length, ". Defaulting to '", _read_length, "'." );
     }
-    if( _total_reads < 1 ) {
-        _total_reads = 1;
-        LOG_ERROR( "[genomeMaker::SequencerSim( <Reader>, <Writer>, ", read_length, ", ", number_of_reads, ", ", error_rate, " )] "
-            "Invalid number of reads. Defaulting to '", _total_reads, "'." );
+    if( _read_depth < 1 ) {
+        _read_depth = 1;
+        LOG_ERROR( "[genomeMaker::SequencerSim( <Reader>, <Writer>, ", read_length, ", ", read_depth, ", ", error_rate, " )] "
+            "Invalid read depth. Defaulted to '", _read_depth, "'." );
     }
     if( _error_rate < 0 || _error_rate > 1 ) {
         _error_rate = 0;
-        LOG_ERROR( "[genomeMaker::SequencerSim( <Reader>, <Writer>, ", read_length, ", ", number_of_reads, ", ", error_rate, " )] "
+        LOG_ERROR( "[genomeMaker::SequencerSim( <Reader>, <Writer>, ", read_length, ", ", read_depth, ", ", error_rate, " )] "
             "Invalid error rate of ", error_rate, ". Defaulting to '", _error_rate, "'." );
     }
-    //TODO make sure to output default values to the cli --help info
+    _read_count = calcReadCount( _reader.size(), _read_length, _read_depth );
+    std::cout << "-> Calculated and applied a read count of: " << _read_depth << std::endl;
 }
 
 /**
@@ -52,18 +58,22 @@ bool genomeMaker::SequencerSim::start() {
     }
     //Stats output
     LOG( "[genomeMaker::SequencerSim::start()] Reading from file: '", _reader.getFileName() , "'." );
-    LOG( "[genomeMaker::SequencerSim::start()] Read length: ", _read_length, "; Total reads: ", _total_reads, "; Error rate: ", _error_rate, "." );
+    LOG( "[genomeMaker::SequencerSim::start()] Read length: ", _read_length, "; Total reads: ", _read_depth, "; Error rate: ", _error_rate, "." );
+    LOG( "[genomeMaker::SequencerSim::start()] Read count calculated as: ", _read_count );
     LOG( "[genomeMaker::SequencerSim::start()] Writing to file: '", _writer.getFileName() , "'." );
-    //TODO output stats to screen?
-    std::cout << "..Starting..." << std::endl;
+    std::cout << "...Starting..." << std::endl;
+
+
+    //TODO add throbber or progress bar
     //Sequencer simulation
 
 
-    unsigned line_char_length = 71; //per line max char write for cleanliness
-    auto randomiser = Randomiser(); //TODO set pool range
+    size_t line_size = 71; //per line max char write for cleanliness
+    _randomiser.setPoolRange( 0, 10 ); //TODO calculate and set real pool range -> try to fit read_length into chunk?
 
+    //TODO take out chunk and do random reads * depth
     std::vector<char> v;
-    while( _reader.read( v, 3 ) ) {
+    while( _reader.read( v, _read_length ) ) {
         for( auto i : v ) {
             std::cout << i << ", ";
         }
@@ -71,7 +81,7 @@ bool genomeMaker::SequencerSim::start() {
     }
 
     unsigned count { 0 };
-    while( count < _total_reads ) {
+    while( count < _read_depth ) {
         //_reader.read()?
 
 
@@ -106,8 +116,8 @@ size_t genomeMaker::SequencerSim::getReadLength() const {
  * Gets the set total number of reads
  * @return Total reads
  */
-size_t genomeMaker::SequencerSim::getTotalReads() const {
-    return _total_reads;
+size_t genomeMaker::SequencerSim::getReadDepth() const {
+    return _read_depth;
 }
 
 /**
@@ -116,5 +126,27 @@ size_t genomeMaker::SequencerSim::getTotalReads() const {
  */
 double genomeMaker::SequencerSim::getErrorRate() const {
     return _error_rate;
+}
+
+/**
+ * Gets the number of reads
+ * @return Read count
+ */
+uint64_t genomeMaker::SequencerSim::getReadCount() const {
+    return _read_count;
+}
+
+/**
+ * Calculates the read count
+ * @param genome_byte_size Genome size in bytes
+ * @param read_length      Read length in number of chars
+ * @return Read depth
+ */
+uint64_t genomeMaker::SequencerSim::calcReadCount( const std::streampos &genome_size,
+                                                   const size_t &read_length,
+                                                   const size_t &read_depth ) const
+{
+    //depth = read_count * read_length / genome_size
+    return read_depth * genome_size / _read_length;
 }
 

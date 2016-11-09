@@ -18,7 +18,7 @@ namespace genomeMaker {
         bool        _sequencer_flag { false };
         std::string _sequencer_file { "" };
         size_t      _read_length    { 260 };
-        size_t      _read_count     { 0 };
+        unsigned    _read_depth     { 0 };
         double      _error_rate     { 0 };
     };
 }

@@ -11,7 +11,7 @@ TEST( SequencerSim_Tests, Constructor ) {
     auto writer = MOCK_Writer();
     auto sim = genomeMaker::SequencerSim( reader, writer, 10, 100, 0.5 );
     ASSERT_EQ( 10, sim.getReadLength() );
-    ASSERT_EQ( 100, sim.getTotalReads() );
+    ASSERT_EQ( 100, sim.getReadDepth() );
     ASSERT_EQ( 0.5, sim.getErrorRate() );
 }
 
@@ -34,11 +34,11 @@ TEST( SequencerSim_Tests, getTotalReads ) {
     auto reader = MOCK_Reader();
     auto writer = MOCK_Writer();
     auto sim = genomeMaker::SequencerSim( reader, writer, 10, 100, 0.5 );
-    ASSERT_EQ( 100, sim.getTotalReads() );
+    ASSERT_EQ( 100, sim.getReadDepth() );
     sim = genomeMaker::SequencerSim( reader, writer, 10, 1, 0.5 );
-    ASSERT_EQ( 1, sim.getTotalReads() ); //lower bound
+    ASSERT_EQ( 1, sim.getReadDepth() ); //lower bound
     sim = genomeMaker::SequencerSim( reader, writer, 10, 0, 0.5 );
-    ASSERT_EQ( 1, sim.getTotalReads() ); //defaulting
+    ASSERT_EQ( 1, sim.getReadDepth() ); //defaulting
 }
 
 TEST( SequencerSim_Tests, getErrorRate ) {

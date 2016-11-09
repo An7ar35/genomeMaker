@@ -94,7 +94,7 @@ void genomeMaker::cli::loadOptionsIntoContainer( const eadlib::cli::Parser &pars
             options._read_length = converter.string_to_type<size_t>( parser.getValues( "-length" ).at( 0 ) );
         }
         if( parser.getValueFlags( "-count" ).at( 0 ) ) {
-            options._read_count = converter.string_to_type<size_t>( parser.getValues( "-count" ).at( 0 ) );
+            options._read_depth = converter.string_to_type<unsigned>( parser.getValues( "-count" ).at( 0 ) );
         }
         if( parser.getValueFlags( "-error" ).at( 0 ) ) {
             options._error_rate = converter.string_to_type<double>( parser.getValues( "-error" ).at( 0 ) );
@@ -102,42 +102,4 @@ void genomeMaker::cli::loadOptionsIntoContainer( const eadlib::cli::Parser &pars
     } catch ( std::exception e ) {
         std::cerr << e.what() << std::endl;
     }
-}
-
-/**
- * Checks if there are any file conflicts with chosen file name in option container
- * @param option_container FileOptions container
- * @return Conflict state
- */
-bool genomeMaker::cli::existFileConflicts( const genomeMaker::FileOptions &option_container ) {
-    bool genome_file_exists = access( option_container._genome_file.c_str(), F_OK ) != -1;
-    bool sequencer_file_exists = access( option_container._sequencer_file.c_str(), F_OK ) != -1;
-    if( option_container._genome_flag && option_container._sequencer_flag ) { //Everything
-        if( genome_file_exists ) {
-            std::cerr << "Error: genome file already exists." << std::endl;
-            return true;
-        }
-        if( sequencer_file_exists ) {
-            std::cerr << "Error: sequencer file already exists." << std::endl;
-            return true;
-        }
-    } else if( option_container._genome_flag && !option_container._sequencer_flag ) { //Genome only
-        if( genome_file_exists ) {
-            std::cerr << "Error: genome file already exists." << std::endl;
-            return true;
-        }
-    } else if( !option_container._genome_flag && option_container._sequencer_flag ) { //Sequencer only
-        if( genome_file_exists ) {
-            //TODO load file
-            //TODO if empty then warn + stop
-        } else {
-            std::cerr << "Error: genome file does not exists. Cannot simulate sequencer on nothing!." << std::endl;
-            return true;
-        }
-        if( sequencer_file_exists ) {
-            std::cerr << "Error: sequencer file already exists." << std::endl;
-            return true;
-        }
-    }
-    return false;
 }

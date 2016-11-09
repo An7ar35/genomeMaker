@@ -1,8 +1,8 @@
 #ifndef SUPERBUBBLES_CREATOR_H
 #define SUPERBUBBLES_CREATOR_H
 
-//TODO DNA base pair generation (GC, AT)
-//TODO RNA base pair generation (GC, UA, CG)
+//TODO DNA base pair generation (GC, AT) at some point?
+//TODO RNA base pair generation (GC, UA, CG) at some point?
 //TODO completely random generation from of a set of given letters
 
 #include <iostream>
