@@ -15,6 +15,8 @@
 #define EADLIB_PROGRESSBAR_H
 
 #include <iostream>
+#include <sstream>
+#include <iomanip>
 #include <ios>
 
 namespace eadlib {
