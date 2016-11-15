@@ -132,6 +132,7 @@ namespace eadlib {
             for( auto it = _values.begin(); it != _values.end(); ++it ) {
                 v.emplace_back( it->_flag );
             }
+            return v;
         }
 
         /**

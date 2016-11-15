@@ -205,14 +205,14 @@ namespace eadlib {
         inline std::vector<bool> Parser::getValueFlags( const std::string &option_name ) const {
             if( _name_map.find( option_name ) != _name_map.end() ) {
                 size_t index = _name_map.at( option_name );
-                if( _options.at( index ).valuesSet() > 0 ) {
+                if( _options.at( index ).valuesExpected() > 0 ) {
                     return _options.at( index ).getValueFlags();
                 } else {
                     throw std::out_of_range( "[eadlib::cli::Parser::getValueFlags( std::string )] Option has no expected values." );
                 }
             } else if( _alt_map.find( option_name ) != _alt_map.end() ) {
                 size_t index = _alt_map.at( option_name );
-                if( _options.at( index ).valuesSet() > 0 ) {
+                if( _options.at( index ).valuesExpected() > 0 ) {
                     return _options.at( index ).getValueFlags();
                 } else {
                     throw std::out_of_range( "[eadlib::cli::Parser::getValueFlags( std::string )] Option has no expected values." );
@@ -234,14 +234,16 @@ namespace eadlib {
                 if( _options.at( index ).valuesSet() > 0 ) {
                     return _options.at( index ).getValues();
                 } else {
-                    throw std::out_of_range( "[eadlib::cli::Parser::getValues( std::string )] Option has expected values." );
+                    throw std::out_of_range( "[eadlib::cli::Parser::getValues( std::string )] "
+                                                 "Option has expected values but nothing was found." );
                 }
             } else if( _alt_map.find( option_name ) != _alt_map.end() ) {
                 size_t index = _alt_map.at( option_name );
                 if( _options.at( index ).valuesSet() > 0 ) {
                     return _options.at( index ).getValues();
                 } else {
-                    throw std::out_of_range( "[eadlib::cli::Parser::getValues( std::string )] Option has expected values." );
+                    throw std::out_of_range( "[eadlib::cli::Parser::getValues( std::string )] "
+                                                 "Option has expected values but nothing was found." );
                 }
             } else {
                 throw std::out_of_range( "[eadlib::cli::Parser::getValues( std::string )] Name of option given does not exist." );

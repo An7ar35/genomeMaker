@@ -73,7 +73,7 @@ namespace eadlib {
                                    static_cast<std::string>( typeid( T ).name()), " received." );
                         throw std::bad_cast();
                     }
-                    if( value.length() != ss.width() ) {
+                    if( value.size() != ss.str().size() ) {
                         LOG_ERROR( "[eadlib::tool::Convert::string_to_type(", value, ")] Not a valid ",
                                    static_cast<std::string>( typeid( T ).name()), " received." );
                         throw std::bad_cast();

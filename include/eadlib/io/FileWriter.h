@@ -48,7 +48,8 @@ namespace eadlib {
          * @param file_name File name
          */
         inline FileWriter::FileWriter( const std::string &file_name ) :
-            _file_name( file_name )
+            _file_name( file_name ),
+            _output_stream( new std::ofstream )
         {}
 
         /**
@@ -113,7 +114,7 @@ namespace eadlib {
         template<class T> bool FileWriter::write( const T &value ) {
             ( *_output_stream ) << value;
             if( _output_stream->bad() || _output_stream->fail() ) {
-                LOG_ERROR( "[eadlib::io::FileWriter::write( ", value, " )] Problem writing to file: ",
+                LOG_ERROR( "[eadlib::io::FileWriter::write( ", value, " )] Problem writing to file '", _file_name, "': ",
                            strerror(errno) );
                 return false;
             }
