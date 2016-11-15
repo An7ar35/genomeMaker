@@ -18,7 +18,10 @@
 #include <unordered_map>
 #include <list>
 #include "Option.h"
-//TODO see about having an ordered category output
+
+//TODO printInfo() -> organise size of columns based on largest item inside of each
+//TODO printInfo() -> option to move the required and default flag/desc to next line?
+
 namespace eadlib {
     namespace cli {
         class Parser {
@@ -26,11 +29,15 @@ namespace eadlib {
             struct ValueCheck {
                 std::regex regex;
                 std::string fail_msg;
+                std::string default_value = "";
             };
             Parser();
             ~Parser();
-            void option( const std::string &cat, const std::string &name, const std::string &alt,
-                         const std::string &desc, const bool &required,
+            void option( const std::string &cat,
+                         const std::string &name,
+                         const std::string &alt,
+                         const std::string &desc,
+                         const bool &required,
                          std::list<ValueCheck> value_regexs );
             void addTitleLine( const std::string &title );
             void addDescriptionLine( const std::string &usage );
@@ -45,14 +52,14 @@ namespace eadlib {
           private:
             typedef std::unordered_map<std::string, size_t> IndexMap_t;
             typedef std::unordered_map<std::string, std::list<size_t>> MultiIndexMap_t;
-            std::vector<Option>      _options;
-            IndexMap_t               _name_map;
-            IndexMap_t               _alt_map;
-            MultiIndexMap_t          _category_map;
-            std::string              _program_title;
-            std::vector<std::string> _usage_description;
-            std::vector<std::string> _usage_examples;
-
+            std::vector<Option>                    _options;
+            IndexMap_t                             _name_map;
+            IndexMap_t                             _alt_map;
+            MultiIndexMap_t                        _category_map;
+            std::vector<MultiIndexMap_t::iterator> _category_order;
+            std::string                            _program_title;
+            std::vector<std::string>               _usage_description;
+            std::vector<std::string>               _usage_examples;
         };
 
         /**
@@ -69,24 +76,36 @@ namespace eadlib {
 
         /**
          * Adds option to the parser
-         * @param category    Option category
-         * @param name        Option name (e.g. 'n')
-         * @param alternative Option alternative name (e.g.: 'name')
-         * @param description Option description
-         * @param required    Required flag
-         * @param v List of regular expression for value expected in order
+         * @param category     Option category
+         * @param name         Option name (e.g. 'n')
+         * @param alternative  Option alternative name (e.g.: 'name')
+         * @param description  Option description
+         * @param required     Required flag
+         * @param value_regexs List of { regular expression, error message, default value } for values expected in order
          */
-        inline void Parser::option( const std::string &category, const std::string &name, const std::string &alternative,
-                             const std::string &description, const bool &required, std::list<ValueCheck> value_regexs ) {
+        inline void Parser::option( const std::string &category,
+                                    const std::string &name,
+                                    const std::string &alternative,
+                                    const std::string &description,
+                                    const bool &required,
+                                    std::list<ValueCheck> value_regexs ) {
             //creating/adding index entries for the option
-            _category_map.insert( typename MultiIndexMap_t::value_type( category, std::list<size_t>() ) );
+            auto insert_result = _category_map.insert( typename MultiIndexMap_t::value_type( category,
+                                                                                             std::list<size_t>() ) );
+            if( insert_result.second ) { //if category was added
+                _category_order.emplace_back( insert_result.first ); //add the MultiIndexMap_t iterator
+            }
             _category_map.at( category ).emplace_back( _options.size() );
             _name_map.insert( typename IndexMap_t::value_type( name, _options.size() ) );
             _alt_map.insert( typename IndexMap_t::value_type( alternative, _options.size() ) );
             //creating the option and adding the expected values if any
             auto option = Option( name, alternative, description, required );
             for( auto regex : value_regexs ) {
-                option.addValueRegex( regex.regex, regex.fail_msg );
+                if( regex.default_value.empty() ) {
+                    option.addValueRegex( regex.regex, regex.fail_msg );
+                } else {
+                    option.addValueRegex( regex.regex, regex.fail_msg, regex.default_value );
+                }
             }
             _options.emplace_back( option );
         }
@@ -138,8 +157,9 @@ namespace eadlib {
                         size_t count { 0 };
                         while( count < _options.at( index ).valuesExpected() ) {
                             it++;
-                            if( !_options.at( index ).setValue( *it )) {
-                                std::cerr << "Value '" << *it << "' for Option '" << name << "' is not valid." << std::endl;
+                            if( !_options.at( index ).setValue( count, *it ) ) {
+                                std::cerr << "Value '" << *it << "' for Option '"
+                                          << name << "' is not valid." << std::endl;
                                 return false;
                             }
                             count++;
@@ -148,10 +168,11 @@ namespace eadlib {
                         size_t index = _alt_map.at( *it );
                         std::string name = *it;
                         size_t count { 0 };
-                        while( count < _options.at( index ).valuesExpected()) {
+                        while( count < _options.at( index ).valuesExpected() ) {
                             it++;
-                            if( !_options.at( index ).setValue( *it )) {
-                                std::cerr << "Value '" << *it << "' for Option '" << name << "' is not valid." << std::endl;
+                            if( !_options.at( index ).setValue( count, *it ) ) {
+                                std::cerr << "Value '" << *it << "' for Option '"
+                                          << name << "' is not valid." << std::endl;
                                 return false;
                             }
                             count++;
@@ -180,15 +201,15 @@ namespace eadlib {
                 }
                 std::cout << std::endl;
             }
-            for( auto l : _category_map ) {
-                std::cout << "-|" << l.first << "|-" << std::endl;
-                for( auto i : l.second ) {
+            for( auto cat : _category_order ) {
+                std::cout << "-|" << cat->first << "|-" << std::endl;
+                for( auto i : cat->second ) {
                     std::cout << "  " << _options.at( i ) << std::endl;
                 }
                 std::cout << std::endl;
             }
             if( !_usage_examples.empty() ) {
-                std::cout << "-|Example|-" << std::endl;
+                std::cout << "-|Example(s)|-" << std::endl;
                 for( auto eg : _usage_examples ) {
                     std::cout << eg << std::endl;
                 }
@@ -197,7 +218,7 @@ namespace eadlib {
         }
 
         /**
-         * Gets the list of value flags for an option (i.e. whether a value is set or not)
+         * Gets the list of value flags for an option (i.e. whether a value is set or not OR a default exists)
          * @param option_name Option name
          * @return List of flags
          * @throws std::out_of_range when option name given is not found or there are no values for it
@@ -208,17 +229,23 @@ namespace eadlib {
                 if( _options.at( index ).valuesExpected() > 0 ) {
                     return _options.at( index ).getValueFlags();
                 } else {
-                    throw std::out_of_range( "[eadlib::cli::Parser::getValueFlags( std::string )] Option has no expected values." );
+                    std::cerr << "Option '" << option_name << "' has no expected values." << std::endl;
+                    throw std::out_of_range( "[eadlib::cli::Parser::getValueFlags( std::string )] "
+                                                 "Option has no expected values." );
                 }
             } else if( _alt_map.find( option_name ) != _alt_map.end() ) {
                 size_t index = _alt_map.at( option_name );
                 if( _options.at( index ).valuesExpected() > 0 ) {
                     return _options.at( index ).getValueFlags();
                 } else {
-                    throw std::out_of_range( "[eadlib::cli::Parser::getValueFlags( std::string )] Option has no expected values." );
+                    std::cerr << "Option '" << option_name << "' has no expected values." << std::endl;
+                    throw std::out_of_range( "[eadlib::cli::Parser::getValueFlags( std::string )] "
+                                                 "Option has no expected values." );
                 }
             } else {
-                throw std::out_of_range( "[eadlib::cli::Parser::getValueFlags( std::string )] Name of option given does not exist." );
+                std::cerr << "Option '" << option_name << "' does not exist." << std::endl;
+                throw std::out_of_range( "[eadlib::cli::Parser::getValueFlags( std::string )] "
+                                             "Name of option given does not exist." );
             }
         }
 
@@ -234,6 +261,7 @@ namespace eadlib {
                 if( _options.at( index ).valuesSet() > 0 ) {
                     return _options.at( index ).getValues();
                 } else {
+                    std::cerr << "Values not found for Option '" << option_name << "'." << std::endl;
                     throw std::out_of_range( "[eadlib::cli::Parser::getValues( std::string )] "
                                                  "Option has expected values but nothing was found." );
                 }
@@ -242,11 +270,14 @@ namespace eadlib {
                 if( _options.at( index ).valuesSet() > 0 ) {
                     return _options.at( index ).getValues();
                 } else {
+                    std::cerr << "Values not found for Option '" << option_name << "'." << std::endl;
                     throw std::out_of_range( "[eadlib::cli::Parser::getValues( std::string )] "
                                                  "Option has expected values but nothing was found." );
                 }
             } else {
-                throw std::out_of_range( "[eadlib::cli::Parser::getValues( std::string )] Name of option given does not exist." );
+                std::cerr << "Option '" << option_name << "' does not exist." << std::endl;
+                throw std::out_of_range( "[eadlib::cli::Parser::getValues( std::string )] "
+                                             "Name of option given does not exist." );
             }
         }
 
