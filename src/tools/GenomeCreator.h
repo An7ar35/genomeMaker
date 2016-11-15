@@ -1,9 +1,9 @@
 #ifndef SUPERBUBBLES_CREATOR_H
 #define SUPERBUBBLES_CREATOR_H
 
-//TODO DNA base pair generation (GC, AT) at some point?
-//TODO RNA base pair generation (GC, UA, CG) at some point?
-//TODO completely random generation from of a set of given letters
+//TODO Full DNA base pair generation (GC, AT) at some point?
+//TODO Full RNA base pair generation (GC, UA, CG) at some point?
+//TODO implement completely random generation from of a set of given letters functionality in the future
 
 #include <iostream>
 
@@ -16,14 +16,14 @@
 namespace genomeMaker {
     class GenomeCreator {
       public:
-        GenomeCreator( const Randomiser &randomiser, const std::string &file_name  );
-        void create_DNA( const uint64_t &genome_size );
-        void create_RNA( const uint64_t &genome_size );
-        void create_SET( const uint64_t &genome_size, const std::string &set );
+        GenomeCreator( const Randomiser &randomiser, eadlib::io::FileWriter &writer );
+        bool create_DNA( const uint64_t &genome_size );
+        bool create_RNA( const uint64_t &genome_size );
+        bool create_SET( const uint64_t &genome_size, const std::string &set );
 
       private:
-        void createGenomeFile( const uint64_t &genome_size, const std::vector<char> &set  );
-        std::string _file_name;
+        bool createGenomeFile( const uint64_t &genome_size, const std::vector<char> &set  );
+        eadlib::io::FileWriter &_writer;
         Randomiser _randomiser;
     };
 }

@@ -12,6 +12,7 @@ namespace genomeMaker {
         Randomiser( const uint64_t &range_from, const uint64_t &range_to );
         Randomiser( const Randomiser &randomiser );
         Randomiser( Randomiser &&randomiser );
+        Randomiser & operator =( const Randomiser &rhs );
         bool setPoolRange( const uint64_t &range_from, const uint64_t &range_to );
         unsigned long getRand();
       private:

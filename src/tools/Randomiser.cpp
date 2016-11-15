@@ -43,6 +43,17 @@ genomeMaker::Randomiser::Randomiser( Randomiser &&randomiser ) :
 {}
 
 /**
+ * Copy-assignement operator
+ * @param rhs Randomiser to copy over
+ * @return Randomiser
+ */
+genomeMaker::Randomiser & genomeMaker::Randomiser::operator =( const Randomiser &rhs ) {
+    _rng = rhs._rng;
+    _distribution = rhs._distribution;
+    return *this;
+}
+
+/**
  * Gets a random number from the pool
  * @return Random number from pool
  */

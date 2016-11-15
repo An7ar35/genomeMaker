@@ -1,4 +1,5 @@
 #include <iostream>
+#include <ncurses.h>
 
 #include "eadlib/logger/Logger.h"
 #include "eadlib/cli/parser/Parser.h"
@@ -34,35 +35,39 @@ int main( int argc, char *argv[] ) {
         if( parser.parse( argc, argv ) ) {
             auto option_container = genomeMaker::FileOptions();
             genomeMaker::cli::loadOptionsIntoContainer( parser, option_container );
-
-            std::cout << "|-------------------------------------------|\n"
-                      << "|=========[ " << GENOMEMAKER_DESC << " ]=========|\n"
-                      << "|-------------------------------------------|\n"
-                      << std::endl;
-
+            if( !option_container._genome_flag && !option_container._sequencer_flag ) {
+                std::cerr << "Error: Not enough options supplied to do anything." << std::endl;
+                return -1;
+            }
             if( genomeMaker::existFileConflicts( option_container ) ) {
                 return -1;
             }
 
+            std::cout << "|=========[ " << GENOMEMAKER_DESC << " ]=========|\n" << std::endl;
             /////////////////////////////
             // Genome creation section //
             /////////////////////////////
             if( option_container._genome_flag ) {
-                std::cout << "-> ==| genome creation |==" << std::endl;
+                std::cout << "===| genome creation |===" << std::endl;
                 if( !genomeMaker::checkGenomeOptions( option_container ) ) {
                     return -1;
                 }
                 //Printing info
                 genomeMaker::printGenomeOptions( option_container );
                 //Creating synthetic genome data
-                auto creator = genomeMaker::GenomeCreator( genomeMaker::Randomiser(),
-                                                           option_container._genome_file );
+                eadlib::io::FileWriter writer( option_container._genome_file );
+                auto creator = genomeMaker::GenomeCreator( genomeMaker::Randomiser(), writer );
                 switch( option_container._letter_set ) {
                     case genomeMaker::FileOptions::LetterSet::DNA:
-                        creator.create_DNA( option_container._genome_size );
+                        if( !creator.create_DNA( option_container._genome_size ) ) {
+                            return -1;
+                        }
                         break;
                     case genomeMaker::FileOptions::LetterSet::RNA:
-                        creator.create_RNA( option_container._genome_size );
+                        if( creator.create_RNA( option_container._genome_size ) ) {
+                            return -1;
+                        }
+                        break;
                 }
                 std::cout << "-> Genome created." << std::endl;
             }
@@ -71,7 +76,7 @@ int main( int argc, char *argv[] ) {
             // Sequencer simulation section //
             //////////////////////////////////
             if( option_container._sequencer_flag ) {
-                std::cout << "-> ==| sequencer simulation |==" << std::endl;
+                std::cout << "===| sequencer simulation |===" << std::endl;
                 if( !genomeMaker::checkSequencerOptions( option_container ) ) {
                     return -1;
                 }
@@ -84,13 +89,16 @@ int main( int argc, char *argv[] ) {
                 if( !writer.open() ) {
                     throw std::runtime_error( "FileWriter had problem opening stream to sequencer file output. For more see the log." );
                 }
+                //Creating Randomiser objects
+                auto read_randomiser  = genomeMaker::Randomiser();
+                auto error_randomiser = genomeMaker::Randomiser();
                 //Printing info
                 genomeMaker::printSequencerOptions( option_container );
                 //Simulating sequencer reads...
-                auto randomiser = genomeMaker::Randomiser();
                 auto sequencer = genomeMaker::SequencerSim( reader,
                                                             writer,
-                                                            randomiser,
+                                                            read_randomiser,
+                                                            error_randomiser,
                                                             option_container._read_length,
                                                             option_container._read_depth,
                                                             option_container._error_rate );
@@ -100,6 +108,7 @@ int main( int argc, char *argv[] ) {
             std::cout << "-> Finished." << std::endl;
         }
     } catch( std::exception e ) {
+        std::cerr << "Something really wrong happened..." << std::endl;
         std::cerr << e.what() << std::endl;
     }
     return 0;
@@ -125,8 +134,18 @@ bool genomeMaker::checkGenomeOptions( genomeMaker::FileOptions &option_container
  */
 bool genomeMaker::checkSequencerOptions( genomeMaker::FileOptions &option_container ) {
     try {
-        if( option_container._read_depth < 1 ) { //No read count given or 0
-            std::cout << "-> No read count given. A depth will be calculated." << std::endl;
+        if( option_container._read_depth < 1 ) { //No read depth given or 0
+            std::cout << "-> No read depth was given." << std::endl;
+            return false;
+        }
+        if( option_container._read_length < 1 || option_container._read_length > 1000 ) {
+            std::cout << "-> Invalid read length (" << option_container._read_length << ") given.";
+            std::cout << " Must be between 1-1000 inc. Aborting." << std::endl;
+            return false;
+        }
+        if( option_container._error_rate < 0 || option_container._error_rate > 1 ) {
+            std::cout << "-> Invalid error rate. Must be between 0-1 inc. Aborting." << std::endl;
+            return false;
         }
         off_t genome_file_size = genomeMaker::getFileSize( option_container._genome_file );
         if( genome_file_size < 1 ) {
@@ -167,7 +186,7 @@ void genomeMaker::printGenomeOptions( const genomeMaker::FileOptions &option_con
 void genomeMaker::printSequencerOptions( const genomeMaker::FileOptions &option_container ) {
     std::cout << "-> Sequencer file options: " << std::endl;
     std::cout << "\tRead file : " << option_container._sequencer_file << std::endl;
-    std::cout << "\tRead count: " << option_container._read_depth << std::endl;
+    std::cout << "\tRead depth: " << option_container._read_depth << std::endl;
     std::cout << "\tRead size : " << option_container._read_length << std::endl;
     std::cout << "\tError rate: " << option_container._error_rate << std::endl;
 }
@@ -196,8 +215,15 @@ bool genomeMaker::existFileConflicts( const genomeMaker::FileOptions &option_con
         }
     } else if( !option_container._genome_flag && option_container._sequencer_flag ) { //Sequencer only
         if( genome_file_exists ) {
-            //TODO load file
-            //TODO if empty then warn + stop
+            try {
+                if( getFileSize( option_container._genome_file ) < 1 ) {
+                    std::cerr << "Error: Genome file looks empty. Aborting." << std::endl;
+                    return false;
+                }
+            } catch ( std::runtime_error e ) {
+                std::cerr << "Error: Reference genome file doesn't exist. Aborting." << std::endl;
+                return false;
+            }
         } else {
             std::cerr << "Error: genome file does not exists. Cannot simulate sequencer on nothing!." << std::endl;
             return true;
