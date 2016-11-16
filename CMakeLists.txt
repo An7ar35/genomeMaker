@@ -13,6 +13,10 @@ enable_testing()
 find_package(GTest REQUIRED)
 include_directories(${GTEST_INCLUDE_DIRS})
 
+#// NCurses library
+find_package(Curses REQUIRED)
+include_directories(${CURSES_INCLUDE_DIR})
+
 set(SOURCE_FILES
         src/tools/Randomiser.cpp
         src/tools/Randomiser.h
@@ -23,7 +27,7 @@ set(SOURCE_FILES
         src/tools/SequencerSim.h
         src/containers/FileOptions.h
         src/cli/cli.h
-        src/cli/cli.cpp)
+        src/cli/cli.cpp src/containers/Buffers.h)
 
 set(TEST_FILES
         tests/Creator_tests.cpp
@@ -39,9 +43,12 @@ add_executable(
         genomeMaker
         ${SOURCE_FILES})
 
+target_link_libraries(genomeMaker ${CURSES_LIBRARIES})
+
 add_executable(
         genomeMaker_Tests
         ${TEST_FILES})
 
-target_link_libraries(genomeMaker_Tests gtest)
+target_link_libraries(genomeMaker_Tests gtest ${CURSES_LIBRARIES})
+
 add_test(genomeMaker_Tests ${TEST_FILES})

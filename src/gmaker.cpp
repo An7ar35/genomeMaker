@@ -1,5 +1,4 @@
 #include <iostream>
-#include <ncurses.h>
 
 #include "eadlib/logger/Logger.h"
 #include "eadlib/cli/parser/Parser.h"
@@ -83,11 +82,15 @@ int main( int argc, char *argv[] ) {
                 //Error control on opening streams to the genome and new sequencer files
                 eadlib::io::FileReader reader( option_container._genome_file );
                 if( !reader.open() ) {
-                    throw std::runtime_error( "FileReader had problem opening stream to genome file input. For more see the log." );
+                    LOG_ERROR( "[main(..)] FileReader had a problem opening stream to genome file input '", reader.getFileName(), "'." );
+                    std::cerr << "Error: FileReader had problem opening stream to genome file input. For more see the log." << std::endl;
+                    return -1;
                 }
                 eadlib::io::FileWriter writer( option_container._sequencer_file );
                 if( !writer.open() ) {
-                    throw std::runtime_error( "FileWriter had problem opening stream to sequencer file output. For more see the log." );
+                    LOG_ERROR( "[main(..)] FileWriter had a problem opening stream to sequencer file output '", writer.getFileName(), "'." );
+                    std::cerr << "Error: FileWriter had problem opening stream to sequencer file output. For more see the log." << std::endl;
+                    return -1;
                 }
                 //Creating Randomiser objects
                 auto read_randomiser  = genomeMaker::Randomiser();
@@ -98,11 +101,10 @@ int main( int argc, char *argv[] ) {
                 auto sequencer = genomeMaker::SequencerSim( reader,
                                                             writer,
                                                             read_randomiser,
-                                                            error_randomiser,
-                                                            option_container._read_length,
-                                                            option_container._read_depth,
-                                                            option_container._error_rate );
-                sequencer.start();
+                                                            error_randomiser );
+                sequencer.start( option_container._read_length,
+                                 option_container._read_depth,
+                                 option_container._error_rate );
                 std::cout << "-> Sequencer reads file created." << std::endl;
             }
             std::cout << "-> Finished." << std::endl;
@@ -154,8 +156,9 @@ bool genomeMaker::checkSequencerOptions( genomeMaker::FileOptions &option_contai
         }
         return true;
     } catch ( std::runtime_error e ) {
+        LOG_ERROR( "[genomeMaker::checkSequencerOptions( <genomeMaker::FileOptions> )] "
+                       "Could not get size of genome file '", option_container._genome_file, "'." );
         std::cerr << "Error: Couldn't get the size of the specified Genome file.";
-        std::cerr << e.what() << std::endl;
         return false;
     }
 }
@@ -245,6 +248,7 @@ bool genomeMaker::existFileConflicts( const genomeMaker::FileOptions &option_con
 off_t genomeMaker::getFileSize( const std::string &file_name ) {
     auto file_stats = eadlib::io::FileStats( file_name );
     if( !file_stats.isValid() ) {
+        LOG_ERROR( "[genomeMaker::getFileSize( ", file_name, " )] FileStats could not gain access to the file." );
         throw std::runtime_error( "FileStats could not gain access to the genome file. For more see log." );
     }
     return file_stats.getSize();
