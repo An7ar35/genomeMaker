@@ -28,6 +28,10 @@ namespace genomeMaker {
         uint64_t calcReadCount( const std::streampos &genome_size,
                                 const size_t &read_length,
                                 const size_t &read_depth ) const;
+        uint64_t calcChunkReads( const uint64_t &genome_size,
+                                 const uint64_t &reads_total,
+                                 const uint64_t &genome_chunks,
+                                 const size_t &chunk_size ) const;
         size_t calcMaxIndex( const std::streamsize &current_buffer_size,
                              const std::streamsize &next_buffer_size,
                              const size_t &read_length ) const;
