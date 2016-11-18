@@ -52,7 +52,7 @@ To create a sequencer file named 'my_reads.fasta' with the default read length
 of 260, error rate of 0.01, depth of 200 and based on a genome file
 called 'genome.genome':
 ~~~~
-./genomeMaker -g genome -f reads -d 200 -e 0.01
+./genomeMaker -g my_reads -f reads -d 200 -e 0.01
 ~~~~
     
 #### Creating a genome and its reads in one go ####
@@ -69,7 +69,7 @@ To create a complete set of files composed of:
   - read length of 10 characters and
   - depth of 5
 ~~~~
-./genomeMaker -p my_file -s 100000 -l 10 -d 5
+./genomeMaker -p my_genome -s 100000 -l 10 -d 5
 ~~~~
   
 ## Platforms Supported ##
