@@ -12,6 +12,10 @@ The program can be used in the following cases:
 3. Create both the synthetic genome file and its
     simulated sequencer reads file in one go.
 
+
+#### Notes ####
+___The software is in the alpha stage of development.___
+
 ## How to use ##
 ### CLI ###
 Help with flag descriptions and examples:
