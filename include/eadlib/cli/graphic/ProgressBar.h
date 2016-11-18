@@ -28,7 +28,8 @@ namespace eadlib {
             friend std::ostream & operator <<( std::ostream &os, const ProgressBar &progress_bar );
             const ProgressBar & operator ++();
             const ProgressBar operator ++( int );
-            const ProgressBar operator +=( uint64_t &steps );
+            const ProgressBar operator +=( const uint64_t &steps );
+            const ProgressBar & complete();
             std::ostream & printSimpleBar( std::ostream &out ) const;
             std::ostream & printPercentBar( std::ostream &out, const int &decimal_precision ) const;
             bool isFinished() const;
@@ -111,12 +112,24 @@ namespace eadlib {
          * @param steps Number of steps to increment by
          * @return ProgressBar post-increment
          */
-        inline const ProgressBar ProgressBar::operator +=( uint64_t &steps ) {
+        inline const ProgressBar ProgressBar::operator +=( const uint64_t &steps ) {
             if( _total_steps - steps >= _current_step ) {
                 _current_step += steps;
             } else {
                 _current_step = _total_steps;
             }
+            _progress_position = calcPosition();
+            _percent_completion = calcPercentage();
+            refresh();
+            return *this;
+        }
+
+        /**
+         * Skip to the end (i.e. 100%)
+         * @return ProgressBar
+         */
+        inline const ProgressBar& ProgressBar::complete() {
+            _current_step = _total_steps;
             _progress_position = calcPosition();
             _percent_completion = calcPercentage();
             refresh();
