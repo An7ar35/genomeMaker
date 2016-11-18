@@ -40,11 +40,11 @@ namespace genomeMaker {
                                   uint64_t &total_reads_completed,
                                   Buffers &buffer );
         //Private variables
-        static const size_t LINE_SIZE = 71; //per line max char write in sequencer file output
+        static const size_t _LINE_SIZE = 71; //per line max char write in sequencer file output
         eadlib::io::FileReader &_reader;
         eadlib::io::FileWriter &_writer;
-        genomeMaker::Randomiser &_read_randomiser;
-        genomeMaker::Randomiser &_error_randomiser;
+        Randomiser &_read_randomiser;
+        Randomiser &_error_randomiser;
     };
 }
 

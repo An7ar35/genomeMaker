@@ -141,17 +141,16 @@ bool genomeMaker::SequencerSim::sequenceGenome( const size_t &read_length,
 
 
     //TODO not sure about this block...
-    const uint64_t whole_chunks     { genome_size / chunk_size };
-    const uint64_t chunks_remainder { genome_size % chunk_size };
+    const uint64_t genome_chunks    { ( genome_size / chunk_size ) };
+    u_int64_t      processed_chunks { 0 };
 
     const uint64_t reads_per_chunk { reads_total / ( genome_size / chunk_size ) }; //TODO work out number of reads for the chunk!!*
-    LOG_DEBUG( "[genomeMaker::SequencerSim::sequenceGenome(..)] Number of whole units..........: ", whole_chunks );
-    LOG_DEBUG( "[genomeMaker::SequencerSim::sequenceGenome(..)] Size of remainder left (#chars): ", chunks_remainder );
+    LOG_DEBUG( "[genomeMaker::SequencerSim::sequenceGenome(..)] Number of whole units..........: ", genome_chunks );
+    //LOG_DEBUG( "[genomeMaker::SequencerSim::sequenceGenome(..)] Size of remainder left (#chars): ", chunks_remainder );
     LOG_DEBUG( "[genomeMaker::SequencerSim::sequenceGenome(..)] Number of reads per unit ......: ", reads_per_chunk );
 
     Buffers buffer;
     //TODO *sort out even distribution of reads (count) on chunks inc remainders
-    //TODO !
     //TODO integrate error rate (might be an idea to send it to chunk after calculating the range from the total number of reads?
     //_error_randomiser.setPoolRange( 0, 0 );
 
@@ -161,24 +160,32 @@ bool genomeMaker::SequencerSim::sequenceGenome( const size_t &read_length,
         if( buffer._current_size < 1 || buffer._current_size < read_length) { //Got nothing from read || not enough to do a full length read
             data_remaining_flag = false;
         } else {
+            processed_chunks++;
+            LOG_DEBUG( "[genomeMaker::SequencerSim::sequenceGenome(..)] Processing chunk #", processed_chunks , "/", genome_chunks );
             buffer._next_size = _reader.read( *buffer._next, chunk_size );
             if( buffer._current_size < chunk_size ) { //EOF reached during 'current' read
                 if( !sequenceGenomeChunk( read_length, reads_per_chunk, reads_completed, buffer ) ) {
-                    //TODO error control
+                    LOG_ERROR( "[genomeMaker::SequencerSim::sequenceGenome( ", read_length, ", ", read_depth, ", ", error_rate, ", ", reads_total, " )] "
+                        "Problem occurred whilst processing genome chunk #", processed_chunks, "/", genome_chunks, ". (EOF chunk)" );
+                    return false;
                 }
                 data_remaining_flag = false;
             } else if( buffer._next_size < chunk_size ) { //EOF reached during 'next' read
+                LOG_DEBUG( "[genomeMaker::SequencerSim::sequenceGenome(..)] EOF reached whilst caching 'next' buffer. Merging buffers..." );
                 buffer._current->insert( buffer._current->end(), buffer._next->begin(), buffer._next->end() ); //concatenating 'next' into 'current'
                 buffer._current_size += buffer._next_size;
                 buffer._next_size = 0;
-                LOG_TRACE( "Concatenated next with current buffer.." );
-                if( sequenceGenomeChunk( read_length, reads_per_chunk, reads_completed, buffer ) ) {
-                    //TODO error control
+                if( !sequenceGenomeChunk( read_length, reads_per_chunk, reads_completed, buffer ) ) {
+                    LOG_ERROR( "[genomeMaker::SequencerSim::sequenceGenome( ", read_length, ", ", read_depth, ", ", error_rate, ", ", reads_total, " )] "
+                        "Problem occurred whilst processing genome chunk #", processed_chunks, "/", genome_chunks, ". (EOF merged chunk)" );
+                    return false;
                 }
                 data_remaining_flag = false;
             } else { //Both 'current' and 'next' buffers are fully filled
-                if( sequenceGenomeChunk( read_length, reads_per_chunk, reads_completed, buffer ) ) {
-                    //TODO error control
+                if( !sequenceGenomeChunk( read_length, reads_per_chunk, reads_completed, buffer ) ) {
+                    LOG_ERROR( "[genomeMaker::SequencerSim::sequenceGenome( ", read_length, ", ", read_depth, ", ", error_rate, ", ", reads_total, " )] "
+                        "Problem occurred whilst processing genome chunk ", processed_chunks, "/", genome_chunks, ". (STD chunk)" );
+                    return false;
                 }
                 buffer.swapBuffers();
             }
@@ -216,7 +223,7 @@ bool genomeMaker::SequencerSim::sequenceGenomeChunk( const size_t &read_length,
             std::stringstream ss;
             ss << ">read#" << total_reads_completed << "\n";
             for( size_t i = 0; i < read_length; i++ ) {
-                if( i > 0 && i % LINE_SIZE == 0 ) {
+                if( i > 0 && i % _LINE_SIZE == 0 ) {
                     ss << "\n";
                 }
                 //TODO inject errors (error % variable needed)
