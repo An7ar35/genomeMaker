@@ -215,7 +215,7 @@ bool genomeMaker::SequencerSim::sequenceGenome( const size_t &read_length,
                 //getting number of reads for merged chunks
                 size_t   merged_size     = chunk_size + ( genome_size % chunk_size );
                 uint64_t reads_on_merged = calcChunkReads( genome_size, reads_total, genome_chunks, merged_size );
-                if( reads_on_merged < 0 ) {
+                if( reads_on_merged < 1 ) {
                     LOG_ERROR( "[genomeMaker::SequencerSim::sequenceGenome( ", read_length, ", ", read_depth, ", ", error_rate, ", ", reads_total, " )] "
                         "could not get a number of reads for genome chunk #", processed_chunks, "/", genome_chunks, ". (EOF merged chunk)" );
                     return false;
