@@ -1,11 +1,12 @@
 # Table of Contents
 1. [Description](#description)
-2. [How to use](#how-to-use)
+2. [Compiling](#compiling)
+3. [How to use](#how-to-use)
    1. [Creating a genome file](#creating-a-genome-file)
    2. [Creating a set of FASTA reads](#creating-a-set-of-FASTA-reads)
    3. [Creating a genome and its reads in one go](#creating-a-genome-and-its-reads-in-one-go)
-3. [Logger](#logger)
-4. [Platforms Supported](#platforms-supported)
+4. [Logger](#logger)
+5. [Platforms Supported](#platforms-supported)
 
 ## Description ##
 
@@ -22,9 +23,19 @@ The program can be used in the following cases:
 3. Create both the synthetic genome file and its
     simulated sequencer reads file in one go.
 
-
 #### Notes ####
 ___The software is in the alpha stage of development.___
+
+#### Compiling ####
+
+You will need both ````cmake```` and ````make```` tools.
+
+- Clone the repo from the folder you want to _genomeMaker_ directory to reside.
+- From inside the ````genomeMaker/```` directory run ````cmake CMakerList.txt````.
+- Then run ````make````.
+
+The ````genomeMaker````application should be in the ````genomeMaker/build/```` directory.
+
 
 ## How to use ##
 ### CLI ###
