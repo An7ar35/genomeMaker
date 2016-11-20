@@ -165,8 +165,7 @@ namespace eadlib {
             }
             if( block_size > buffer.size() ) {
                 buffer.resize( block_size, ' ' );
-            }
-            std::streamsize s { 0 };
+            }std::streamoff s { 0 };
             _input_stream->read( buffer.data(), block_size );
             s = _input_stream->gcount();
             if( reachedEOF( _cursor + s ) ) {
@@ -195,7 +194,7 @@ namespace eadlib {
                 LOG_ERROR( "[eadlib::io::FileReader::readLine()] Reached EOF. No more data." );
                 return -1;
             }
-            std::streamsize char_count { 0 };
+            std::streamoff char_count { 0 };
             buffer.clear();
             bool eol_flag { false };
             char character { ' ' };
