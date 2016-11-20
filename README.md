@@ -83,8 +83,7 @@ The software is bundled with the components required from the EADlib library.
 ### Linux ツ ###
 - Need a version of GCC with C++14 support (made with GCC 6.2.1)
 - CMake 3.5
-- Google Tests libraries (gTest & gMock)
-- POSIX libraries for eadlib::io::FileStats (Unix stats() call)
+- [_Optional_] Google Tests libraries (gTest & gMock) to run the unit tests
 
 ### Mac OSX ###
 

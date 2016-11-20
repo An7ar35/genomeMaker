@@ -4,7 +4,6 @@
 #include "eadlib/cli/parser/Parser.h"
 #include "eadlib/io/FileReader.h"
 #include "eadlib/io/FileWriter.h"
-#include "eadlib/io/FileStats.h"
 
 #include "containers/FileOptions.h"
 #include "cli/cli.h"
@@ -17,7 +16,7 @@ namespace genomeMaker {
     void printGenomeOptions( const genomeMaker::FileOptions &option_container );
     void printSequencerOptions( const genomeMaker::FileOptions &option_container );
     bool existFileConflicts( const genomeMaker::FileOptions &option_container );
-    off_t getFileSize( const std::string &file_name );
+    std::streampos getFileSize( const std::string &file_name );
 }
 
 /**
@@ -149,7 +148,7 @@ bool genomeMaker::checkSequencerOptions( genomeMaker::FileOptions &option_contai
             std::cout << "-> Invalid error rate. Must be between 0-1 inc. Aborting." << std::endl;
             return false;
         }
-        off_t genome_file_size = genomeMaker::getFileSize( option_container._genome_file );
+        std::streampos genome_file_size = genomeMaker::getFileSize( option_container._genome_file );
         if( genome_file_size < 1 ) {
             std::cerr << "Error: Genome file looks empty. Aborting." << std::endl;
             return false;
@@ -242,14 +241,16 @@ bool genomeMaker::existFileConflicts( const genomeMaker::FileOptions &option_con
 /**
  * Gets the size of a file
  * @param file_name File name
- * @return Sixe of file in bytes
+ * @return Size of file (#chars)
  * @throws std::runtime_error when file cannot be accessed
  */
-off_t genomeMaker::getFileSize( const std::string &file_name ) {
-    auto file_stats = eadlib::io::FileStats( file_name );
-    if( !file_stats.isValid() ) {
-        LOG_ERROR( "[genomeMaker::getFileSize( ", file_name, " )] FileStats could not gain access to the file." );
-        throw std::runtime_error( "FileStats could not gain access to the genome file. For more see log." );
+std::streampos genomeMaker::getFileSize( const std::string &file_name ) {
+    auto reader = eadlib::io::FileReader( file_name );
+    if( !reader.open() ) {
+        LOG_ERROR( "[genomeMaker::getFileSize( ", file_name, " )] FileReader could not gain access to the file." );
+        throw std::runtime_error( "FileReader could not gain access to the genome file. For more see log." );
     }
-    return file_stats.getSize();
+    std::streampos cur_end = reader.size();
+    reader.close();
+    return cur_end;
 }
