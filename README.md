@@ -6,6 +6,7 @@ deBruijn graph construction from FASTA reads and have the ability to compare
 the results to original genome data.
 
 The program can be used in the following cases:
+
 1. Create a synthetic genome.
 2. Create a simulated sequencer reads file (FASTA)
     from an existing genome file.
@@ -52,9 +53,9 @@ Note: Error rate ````-e```` is not yet implemented.
 ~~~~
 
 ##### Example #####
-To create a sequencer file named 'my_reads.fasta' with the default read length
+To create a sequencer file named "_my_reads.fasta_" with the default read length
 of 260, error rate of 0.01, depth of 200 and based on a genome file
-called 'genome.genome':
+called "_genome.genome_":
 ~~~~
 ./genomeMaker -g my_reads -f reads -d 200 -e 0.01
 ~~~~
@@ -67,9 +68,9 @@ called 'genome.genome':
 
 #### Example ####
 To create a complete set of files composed of:
-- a genome file called 'my_genome.genome'
+- a genome file called "_my_genome.genome_"
   - size of 100,000 bytes
-- a sequencer file 'my_genome.fasta'
+- a sequencer file "_my_genome.fasta_"
   - read length of 10 characters and
   - depth of 5
 ~~~~

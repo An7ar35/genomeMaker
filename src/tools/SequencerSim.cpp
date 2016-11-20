@@ -110,13 +110,13 @@ uint64_t genomeMaker::SequencerSim::calcChunkReads( const uint64_t &genome_size,
     uint64_t reads = ( chunk_size * 100 / genome_size ) * reads_total / 100; //even-distribution of reads
     if( reads > 0 ) {
         LOG_DEBUG( "[genomeMaker::SequencerSim::calcChunkReads( ", genome_size, ", ", reads_total, ", ", genome_chunks, ", ", chunk_size, " )] "
-            "Even-distribution of reads for chunk of size'", chunk_size, "': ", reads );
+            "Even-distribution of reads for chunk size'", chunk_size, "': ", reads );
         return reads;
     }
     uint64_t reads_alt = reads_total / genome_chunks; //rough distribution of reads
     if( reads_alt > 0 ) {
         LOG_DEBUG( "[genomeMaker::SequencerSim::calcChunkReads( ", genome_size, ", ", reads_total, ", ", genome_chunks, ", ", chunk_size, " )] "
-            "Rough distribution of reads for chunk of size '", chunk_size, "': ", reads_alt );
+            "Rough distribution of reads for chunk size '", chunk_size, "': ", reads_alt );
         return reads_alt;
     }
     LOG_ERROR( "[genomeMaker::SequencerSim::calcChunkReads( ", genome_size, ", ", reads_total, ", ", genome_chunks, ", ", chunk_size, " )] "
@@ -165,12 +165,11 @@ bool genomeMaker::SequencerSim::sequenceGenome( const size_t &read_length,
     const size_t   chunk_size       { read_length * 4 };
     const uint64_t genome_size      { _reader.size() > 0 ? (uint64_t) _reader.size() : 0 };
     const uint64_t genome_chunks    { genome_size / chunk_size };
-    const uint64_t chunk_remainder  { genome_size - ( chunk_size * genome_chunks ) };
     u_int64_t      processed_chunks { 0 };
     LOG( "[genomeMaker::SequencerSim::sequenceGenome(..)] Genome size (#chars)...........: ", genome_size );
     LOG( "[genomeMaker::SequencerSim::sequenceGenome(..)] Size of genome chunks from file: ", chunk_size );
     LOG( "[genomeMaker::SequencerSim::sequenceGenome(..)] Number of chunks to process....: ", genome_chunks );
-    LOG( "[genomeMaker::SequencerSim::sequenceGenome(..)] Size of remainder for chunks...: ", chunk_remainder );
+    LOG( "[genomeMaker::SequencerSim::sequenceGenome(..)] Size of remainder for chunks...: ", genome_size % chunk_size );
 
     //Calculating and error checking number of reads per full sized genome chunks
     uint64_t reads_per_chunk = calcChunkReads( genome_size, reads_total, genome_chunks, chunk_size );
@@ -181,12 +180,12 @@ bool genomeMaker::SequencerSim::sequenceGenome( const size_t &read_length,
     }
     LOG( "[genomeMaker::SequencerSim::sequenceGenome(..)] #reads per whole chunks........: ", reads_per_chunk );
 
-    Buffers buffer;
     //TODO integrate error rate (might be an idea to send it to chunk after calculating the range from the total number of reads?
     //_error_randomiser.setPoolRange( 0, 0 );
 
     eadlib::cli::ProgressBar progress( genome_size, 70 );
     progress.printPercentBar( std::cout, 0 );
+    Buffers buffer;
     buffer._current_size = _reader.read( *buffer._current, chunk_size );
     bool data_remaining_flag { true };
     do {
@@ -244,6 +243,7 @@ bool genomeMaker::SequencerSim::sequenceGenome( const size_t &read_length,
     progress.complete().printPercentBar( std::cout, 0 );
     LOG( "[genomeMaker::SequencerSim::sequenceGenome(..)] Reads completed: ", reads_completed );
     std::cout << "\n-> Total number of reads taken: " << reads_completed << std::endl;
+    return true;
 }
 
 /**
@@ -260,8 +260,6 @@ bool genomeMaker::SequencerSim::sequenceGenomeChunk( const size_t &read_length,
                                                      uint64_t &total_reads_completed,
                                                      Buffers &buffer ) {
     try {
-        //so if we have enough on the next buffer to have a full read starting at back() of current we are golden
-        //if not then we need to adjust the max start index
         size_t max_begin_index = calcMaxIndex( buffer._current_size, buffer._next_size, read_length );
         _read_randomiser.setPoolRange( 0, max_begin_index ); //so that we get full read_length reads only
         LOG_DEBUG( "[genomeMaker::SequencerSim::sequenceGenomeChunk(..)] Current buffer size..: ", buffer._current_size );
@@ -282,7 +280,7 @@ bool genomeMaker::SequencerSim::sequenceGenomeChunk( const size_t &read_length,
                 //TODO inject errors (error % variable needed)
                 if( start_index + i < buffer._current_size ) {
                     ss << buffer._current->at( start_index + i );
-                } else {
+                } else { //read overlaps with the 'next' buffer
                     ss << buffer._next->at( start_index + i - buffer._current_size );
                 }
             }
