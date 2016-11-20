@@ -1,4 +1,13 @@
-# README #
+# Table of Contents
+1. [Description](#description)
+2. [How to use](#how-to-use)
+   1. [Creating a genome file](#creating-a-genome-file)
+   2. [Creating a set of FASTA reads](#creating-a-set-of-FASTA-reads)
+   3. [Creating a genome and its reads in one go](#creating-a-genome-and-its-reads-in-one-go)
+3. [Logger](#logger)
+4. [Platforms Supported](#platforms-supported)
+
+## Description ##
 
 Software to generate randomised content into files from letter sets and then
 generate FASTA read files from it. Originally created in order to test 
@@ -76,7 +85,15 @@ To create a complete set of files composed of:
 ~~~~
 ./genomeMaker -p my_genome -s 100000 -l 10 -d 5
 ~~~~
-  
+
+#### Logger ####
+GenomeMaker comes with a logger but defaults to output to both the screen and the file.
+
+To avoid that just make sure that the output specified in the _log_config.cfg' file only contains:
+"__OUTPUT=<log,FILE_OVERWRITE,TERMINAL,MSG>__"
+
+If you run into issues with the software you will need to change that last argument from "__MSG__" to "__TRACE__" in order to produce a comprehensive log during your next execution of genomeMaker.
+
 ## Platforms Supported ##
 The software is bundled with the components required from the EADlib library.
 
