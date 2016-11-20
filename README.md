@@ -90,8 +90,9 @@ To create a complete set of files composed of:
 GenomeMaker comes with a logger but defaults to output to both the screen and the file.
 
 To avoid that just make sure that the output specified in the _log_config.cfg' file only contains:
-OUTPUT=\<log,FILE_OVERWRITE,TERMINAL,MSG\>
-
+~~~~
+OUTPUT=<log,FILE_OVERWRITE,TERMINAL,MSG>
+~~~~
 If you run into issues with the software you will need to change that last argument from "__MSG__" to "__TRACE__" in order to produce a comprehensive log during your next execution of genomeMaker.
 
 ## Platforms Supported ##
