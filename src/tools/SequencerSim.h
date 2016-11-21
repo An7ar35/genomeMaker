@@ -32,6 +32,8 @@ namespace genomeMaker {
                                 const size_t &read_depth ) const;
         uint64_t calcErrorUpperBound( const uint64_t &reads_total,
                                       const double &error_rate ) const;
+        std::stack<uint64_t> createErrorStack( const uint64_t &reads_total,
+                                               const uint64_t &errors );
         uint64_t calcChunkReads( const uint64_t &genome_size,
                                  const uint64_t &reads_total,
                                  const uint64_t &genome_chunks,
@@ -45,7 +47,7 @@ namespace genomeMaker {
                              const uint64_t &erroneous_reads );
         bool sequenceGenomeChunk( const size_t &read_length,
                                   const uint64_t &read_count,
-                                  const uint64_t &erroneous_reads,
+                                  std::stack<uint64_t> &erroneous_read_indices,
                                   Buffers &buffer );
         //Private variables
         static const size_t _LINE_SIZE = 71; //per line max char write in sequencer file output

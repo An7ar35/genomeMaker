@@ -66,23 +66,23 @@ bool genomeMaker::SequencerSim::start( const size_t &read_length,
         return false;
     }
     //Calculating total number of reads to do on genome
-    uint64_t reads_total = calcReadCount( _reader.size(), read_length, read_depth );
-    uint64_t error_bound = calcErrorUpperBound( reads_total, error_rate );
-    _error_randomiser.setPoolRange( error_bound, reads_total );
-    std::cout << "-> Calculated the number of reads at: ~" << reads_total << std::endl;
+    _total_reads_completed = 0;
+    uint64_t reads_total   = calcReadCount( _reader.size(), read_length, read_depth );
+    _total_read_errors     = calcErrorUpperBound( reads_total, error_rate );
+    _error_randomiser.setPoolRange( _total_read_errors, reads_total );
+    std::cout << "-> Calculated the number of reads at..........: ~" << reads_total << std::endl;
+    std::cout << "-> Calculated the number of erroneous reads at: ~" << _total_read_errors << std::endl;
     //Logging stats
     LOG( "[genomeMaker::SequencerSim::start(..)] Reading from file.: '", _reader.getFileName() , "'" );
     LOG( "[genomeMaker::SequencerSim::start(..)] Read length.......: ", read_length );
     LOG( "[genomeMaker::SequencerSim::start(..)] Depth of reads....: ", read_depth );
     LOG( "[genomeMaker::SequencerSim::start(..)] Error rate........: ", error_rate );
     LOG( "[genomeMaker::SequencerSim::start(..)] Calculated #reads.: ~", reads_total );
-    LOG( "[genomeMaker::SequencerSim::start(..)] Calculated #errors: ~", error_bound, "/", reads_total );
+    LOG( "[genomeMaker::SequencerSim::start(..)] Calculated #errors: ~", _total_read_errors, "/", reads_total );
     LOG( "[genomeMaker::SequencerSim::start(..)] Writing to file...: '", _writer.getFileName() , "'" );
     //Starting sequencing..
-    _total_reads_completed = 0;
-    _total_read_errors     = 0;
     std::cout << "...Starting..." << std::endl;
-    return sequenceGenome( read_length, read_depth, reads_total, error_bound );
+    return sequenceGenome( read_length, read_depth, reads_total, _total_read_errors );
 }
 
 /**
@@ -107,9 +107,51 @@ uint64_t genomeMaker::SequencerSim::calcReadCount( const std::streampos &genome_
  * @return Upper bound number for the eroneous reads
  */
 uint64_t genomeMaker::SequencerSim::calcErrorUpperBound( const uint64_t &reads_total, const double &error_rate ) const {
+    //TODO clean all of this.. horrible hackety-hack prone to failing miserably when a file size is extremely large and the error rate high too
+    unsigned count { 0 };
+    double   err   { error_rate };
+    double   part  { 0 };
+    uint64_t reads { reads_total };
+    std::cout << std::fixed;
+    bool done { false };
+    while( !done ) {
+        if( err * 10 >= 1 ) {
+            done = true;
+        } else {
+            count++;
+            reads /= 10;
+            err *= 10;
+        }
+    }
+    if( std::numeric_limits<double>::max() < reads) { //crap!
+        std::cerr << "Error: could not drop read count into a manageable size for error rate calculation...";
+        std::cerr << "       Returning error injection count of 0 back. Sorry :(" << std::endl;
+        return 0;
+    } else {
+        uint64_t result = std::ceil( static_cast<double>( reads ) * err );
+        return result;
+    }
+}
 
-    //return reads_total * error_rate; //TODO terrible!
-    return 0;
+/**
+ * Creates a randomised set of read indices that should be injected with an error
+ * @param reads_total Total number of reads to do on the genome
+ * @param errors      Total number of errors to inject
+ * @return Ordered stack of read indices
+ */
+std::stack<uint64_t> genomeMaker::SequencerSim::createErrorStack( const uint64_t &reads_total, const uint64_t &errors ) {
+    Randomiser randomiser( 1, reads_total );
+    std::vector<uint64_t> read_pool;
+    for( uint64_t i = 0; i < errors; i++ ) {
+        //as using uniform distribution it's very unlikely to get repeats.
+        read_pool.emplace_back( randomiser.getRand());
+    }
+    std::sort( read_pool.begin(), read_pool.end(), std::greater<uint64_t>());
+    std::stack<uint64_t> stack;
+    for( auto n : read_pool ) {
+        stack.push( n );
+    }
+    return stack;
 }
 
 /**
@@ -166,10 +208,10 @@ size_t genomeMaker::SequencerSim::calcMaxIndex( const std::streamsize &current_b
 
 /**
  * Run the sequencer simulation on the provided genome file
- * @param read_length Length of reads
- * @param read_depth  Depth of the reads
- * @param error_total Total number of errors to inject into reads
- * @param reads_total Total number of reads to do on genome
+ * @param read_length     Length of reads
+ * @param read_depth      Depth of the reads
+ * @param reads_total     Total number of reads to do on genome
+ * @param erroneous_reads Number of erroneous reads
  * @return Success
  */
 bool genomeMaker::SequencerSim::sequenceGenome( const size_t &read_length,
@@ -195,6 +237,9 @@ bool genomeMaker::SequencerSim::sequenceGenome( const size_t &read_length,
     }
     LOG( "[genomeMaker::SequencerSim::sequenceGenome(..)] #reads per whole chunks........: ", reads_per_chunk );
 
+    //Getting indices of reads to inject errors in
+    std::stack<uint64_t> read_error_pool = createErrorStack( reads_total, erroneous_reads );
+
     eadlib::cli::ProgressBar progress( genome_size, 70 );
     progress.printPercentBar( std::cout, 0 );
 
@@ -213,7 +258,7 @@ bool genomeMaker::SequencerSim::sequenceGenome( const size_t &read_length,
             if( buffer._current_size < chunk_size ) { //EOF reached during 'current' read
                 //This block kept for safety but should never trigger as when the cached 'next' buffer hits EOF it gets merged with the current.
                 LOG_DEBUG( "[genomeMaker::SequencerSim::sequenceGenome(..)] Inside the section where the current buffer read hits EOF on the genome!" );
-                if( !sequenceGenomeChunk( read_length, reads_per_chunk, erroneous_reads, buffer )) {
+                if( !sequenceGenomeChunk( read_length, reads_per_chunk, read_error_pool, buffer )) {
                     LOG_ERROR( "[genomeMaker::SequencerSim::sequenceGenome( ", read_length, ", ", read_depth, ", ", reads_total, " )] "
                         "Problem occurred whilst processing genome chunk #", processed_chunks, "/", genome_chunks, ". (EOF chunk)" );
                     return false;
@@ -235,7 +280,7 @@ bool genomeMaker::SequencerSim::sequenceGenome( const size_t &read_length,
                     return false;
                 }
                 LOG_DEBUG( "[genomeMaker::SequencerSim::sequenceGenome(..)] Number of reads on merged chunk: ", reads_on_merged );
-                if( !sequenceGenomeChunk( read_length, reads_on_merged, erroneous_reads, buffer )) {
+                if( !sequenceGenomeChunk( read_length, reads_on_merged, read_error_pool, buffer )) {
                     LOG_ERROR( "[genomeMaker::SequencerSim::sequenceGenome( ", read_length, ", ", read_depth, ", ", reads_total, " )] "
                         "Problem occurred whilst processing genome chunk #", processed_chunks, "/", genome_chunks, ". (EOF merged chunk)" );
                     return false;
@@ -243,7 +288,7 @@ bool genomeMaker::SequencerSim::sequenceGenome( const size_t &read_length,
                 progress += reads_on_merged;
                 data_remaining_flag = false;
             } else { //Both 'current' and 'next' buffers are fully filled
-                if( !sequenceGenomeChunk( read_length, reads_per_chunk, erroneous_reads, buffer )) {
+                if( !sequenceGenomeChunk( read_length, reads_per_chunk, read_error_pool, buffer )) {
                     LOG_ERROR( "[genomeMaker::SequencerSim::sequenceGenome( ", read_length, ", ", read_depth, ", ", reads_total, " )] "
                         "Problem occurred whilst processing genome chunk ", processed_chunks, "/", genome_chunks, ". (STD chunk)" );
                     return false;
@@ -262,16 +307,15 @@ bool genomeMaker::SequencerSim::sequenceGenome( const size_t &read_length,
 
 /**
  * Sequences a genome chunk
- * @param read_length           Length of reads
- * @param read_count            Number of reads to do on the chunk
- * @param total_reads_completed Total number of reads done on the whole genome
- * @param total_errors_injected Total number of errors injected in all the reads
- * @param buffer                Chunk of the genome to sequence
+ * @param read_length            Length of reads
+ * @param read_count             Number of reads to do on the chunk
+ * @param erroneous_read_indices Stack of read indices where an error should be injected
+ * @param buffer                 Chunk of the genome to sequence
  * @return Success
  */
 bool genomeMaker::SequencerSim::sequenceGenomeChunk( const size_t &read_length,
                                                      const uint64_t &read_count,
-                                                     const uint64_t &erroneous_reads,
+                                                     std::stack<uint64_t> &erroneous_read_indices,
                                                      Buffers &buffer ) {
     //TODO use the error randomiser to check if error read or not
     //TODO then create random error based on read size
@@ -286,6 +330,12 @@ bool genomeMaker::SequencerSim::sequenceGenomeChunk( const size_t &read_length,
         uint64_t reads_done = { 0 };
         while( reads_done < read_count ) {
             //Getting read from buffer
+            _total_reads_completed++;
+            if( !erroneous_read_indices.empty() && erroneous_read_indices.top() == _total_reads_completed ) {
+                //TODO
+                LOG_TRACE( "Injecting error in read #", erroneous_read_indices.top() );
+                erroneous_read_indices.pop();
+            }
             size_t start_index = _read_randomiser.getRand();
             std::stringstream ss;
             ss << ">read#" << _total_reads_completed << "\n";
@@ -311,7 +361,6 @@ bool genomeMaker::SequencerSim::sequenceGenomeChunk( const size_t &read_length,
                 return false;
             }
             reads_done++;
-            _total_reads_completed++;
         }
         return true;
     } catch ( std::out_of_range e ) {
