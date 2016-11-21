@@ -7,6 +7,7 @@
    3. [Creating a genome and its reads in one go](#creating-a-genome-and-its-reads-in-one-go)
 4. [Logger](#logger)
 5. [Platforms Supported](#platforms-supported)
+6. [License](#license)
 
 ## Description ##
 
@@ -124,3 +125,9 @@ The software is bundled with the components required from the EADlib library.
 ### Windows ###
 
 - Nope. Good luck.
+
+## License ##
+
+This software is released under the [__GNU General Public License 2__](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html) license.
+
+Please reference when used in project and/or research.
