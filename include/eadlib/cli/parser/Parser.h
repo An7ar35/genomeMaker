@@ -1,14 +1,18 @@
 /**
-   Component Name:  EADlib.cli.Parser
-   Language:        C++14
-
-   License: GNUv2 Public License
-   (c) Copyright E. A. Davison 2016
-
-   Author: E. A. Davison
-
-   Description: CLI parser system
-   Dependencies: cli/parser/Option.h
+ * \class eadlib::cli::Parser
+ *
+ * CLI parser system to process program arguments.
+ * The Parser uses regular expression to check argument values passed to it.
+ * Any value that fail its regular expression check during the parsing will trigger
+ * its associated error message and the parsing method with return false.
+ * If all values check out then true is returned and anything parsed can be queried.
+ *
+ * \note If the regex is malformed an std::regex_error exception will be raise on
+ *       ````option(..)```` by the std::regex() constructor.
+ *
+ * \author       E. A. Davison
+ * \copyright    E. A. Davison 2016
+ * \license      GNUv2 Public License
 **/
 
 #ifndef EADLIB_CLI_PARSER_H
@@ -80,7 +84,7 @@ namespace eadlib {
          * @param name         Option name (e.g. 'n')
          * @param alternative  Option alternative name (e.g.: 'name')
          * @param description  Option description
-         * @param required     Required flag
+         * @param required     Required flag - adds an anotation in the description of the option
          * @param value_regexs List of { regular expression, error message, default value } for values expected in order
          */
         inline void Parser::option( const std::string &category,
