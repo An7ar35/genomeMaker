@@ -25,7 +25,7 @@ void genomeMaker::cli::setupOptions( char **argv, const std::string &program_tit
     parser.addDescriptionLine( "\nUsage:" + std::string( argv[ 0 ] ) + " -<option> <argument>" );
     //Pipeline both genome creation and sequencer simulation section
     parser.option( "All-In-One", "-p", "-pipeline", "Create both genome and sequencer files.", false,
-                   { { std::regex( "([0-9a-zA-Z]+)" ), "File name must be composed of only letter/numbers with no extension." } } );
+                   { { std::regex( "(_?[0-9a-zA-Z]+_?)+)" ), "File name must be composed of only letter/numbers with no extension." } } );
     //Genome file loader/creation section
     parser.option( "Genome", "-g", "-genome", "Name of the genome file to create.", false,
                    { { std::regex( "^(.*/)?(?:$|(.+?)(?:(\\.[^.]*$)|$))+" ), "Invalid filename." } }  );

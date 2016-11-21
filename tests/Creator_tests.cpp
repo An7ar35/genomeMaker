@@ -1,4 +1,5 @@
 #ifndef UNIT_TESTS_READER_H
+#ifndef UNIT_TESTS_READER_H
 #define UNIT_TESTS_READER_H
 
 #include "gtest/gtest.h"
