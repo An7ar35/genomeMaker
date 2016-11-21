@@ -27,6 +27,8 @@ namespace genomeMaker {
  */
 int main( int argc, char *argv[] ) {
     const std::string GENOMEMAKER_DESC = "genomeMaker v0.1a";
+    std::string s;
+    s = std::string( *argv );
     try {
         auto parser = eadlib::cli::Parser();
         genomeMaker::cli::setupOptions( argv, GENOMEMAKER_DESC, parser );
