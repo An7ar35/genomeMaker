@@ -2,6 +2,8 @@
 #define GENOMEMAKER_SEQUENCERSIM_H
 
 #include <iostream>
+#include <cmath>
+#include <ctgmath>
 
 #include "eadlib/logger/Logger.h"
 #include "eadlib/io/FileReader.h"
@@ -28,6 +30,8 @@ namespace genomeMaker {
         uint64_t calcReadCount( const std::streampos &genome_size,
                                 const size_t &read_length,
                                 const size_t &read_depth ) const;
+        uint64_t calcErrorUpperBound( const uint64_t &reads_total,
+                                      const double &error_rate ) const;
         uint64_t calcChunkReads( const uint64_t &genome_size,
                                  const uint64_t &reads_total,
                                  const uint64_t &genome_chunks,
@@ -37,11 +41,11 @@ namespace genomeMaker {
                              const size_t &read_length ) const;
         bool sequenceGenome( const size_t &read_length,
                              const size_t &read_depth,
-                             const double &error_rate,
-                             const uint64_t &reads_total );
+                             const uint64_t &reads_total,
+                             const uint64_t &erroneous_reads );
         bool sequenceGenomeChunk( const size_t &read_length,
                                   const uint64_t &read_count,
-                                  uint64_t &total_reads_completed,
+                                  const uint64_t &erroneous_reads,
                                   Buffers &buffer );
         //Private variables
         static const size_t _LINE_SIZE = 71; //per line max char write in sequencer file output
@@ -49,6 +53,8 @@ namespace genomeMaker {
         eadlib::io::FileWriter &_writer;
         Randomiser &_read_randomiser;
         Randomiser &_error_randomiser;
+        uint64_t _total_reads_completed;
+        uint64_t _total_read_errors;
     };
 }
 
