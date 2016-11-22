@@ -64,7 +64,6 @@ To create a synthetic genome file of 100,000,000 bytes (100MB) with the __RNA__ 
 ~~~~
     
 #### Creating a set of FASTA reads ####
-Note: Error rate ````-e```` is not yet implemented.
 ##### Flags #####
 ~~~~
   -f	-fasta	Name of the FASTA file to create.
@@ -72,6 +71,10 @@ Note: Error rate ````-e```` is not yet implemented.
   -d	-depth	Depth of reads.
   -e	-error	Error rate of the simulated sequencer (0 <= x <= 1).	[DEFAULT='0']
 ~~~~
+
+The error rate is based on the number of expected reads on a genome. i.e.: if the
+error rate is set to 0.01 (1%) and the expected reads number is 75,000 then there
+would be an error injected in 750 reads taken approximately.
 
 ##### Example #####
 To create a sequencer file named "_my_reads.fasta_" with the default read length
@@ -98,7 +101,7 @@ To create a complete set of files composed of:
 ./genomeMaker -p my_genome -s 100000 -l 10 -d 5
 ~~~~
 
-#### Logger ####
+### Logger ###
 GenomeMaker comes with a logger but defaults to output to both the screen and the file.
 
 To avoid that just make sure that the output specified in the ````log_config.cfg````
