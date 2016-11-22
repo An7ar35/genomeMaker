@@ -29,6 +29,8 @@ genomeMaker::Randomiser::Randomiser( const uint64_t &range_from, const uint64_t 
  * @param randomiser Randomiser to copy
  */
 genomeMaker::Randomiser::Randomiser( const Randomiser &randomiser ) :
+    _lower_bound( randomiser._lower_bound ),
+    _upper_bound( randomiser._upper_bound ),
     _rng( randomiser._rng ),
     _distribution( randomiser._distribution )
 {}
@@ -38,6 +40,8 @@ genomeMaker::Randomiser::Randomiser( const Randomiser &randomiser ) :
  * @param randomiser Randomiser to move over
  */
 genomeMaker::Randomiser::Randomiser( Randomiser &&randomiser ) :
+    _lower_bound( randomiser._lower_bound ),
+    _upper_bound( randomiser._upper_bound ),
     _rng( std::move( randomiser._rng ) ),
     _distribution( std::move( randomiser._distribution ) )
 {}
@@ -48,17 +52,11 @@ genomeMaker::Randomiser::Randomiser( Randomiser &&randomiser ) :
  * @return Randomiser
  */
 genomeMaker::Randomiser & genomeMaker::Randomiser::operator =( const Randomiser &rhs ) {
+    _lower_bound = rhs._lower_bound;
+    _upper_bound = rhs._upper_bound;
     _rng = rhs._rng;
     _distribution = rhs._distribution;
     return *this;
-}
-
-/**
- * Gets a random number from the pool
- * @return Random number from pool
- */
-unsigned long genomeMaker::Randomiser::getRand() {
-    return _distribution( _rng );
 }
 
 /**
@@ -72,7 +70,33 @@ bool genomeMaker::Randomiser::setPoolRange( const uint64_t &range_from, const ui
         LOG_ERROR( "[genomeMaker::Randomiser::setPoolSize( ", range_from, ", ", range_to, " )] Pool size specified is too small (", range_to - range_from, ")." );
         return false;
     }
+    _lower_bound = range_from;
+    _upper_bound = range_to;
     _rng.seed( uint64_t() );
     _distribution = std::uniform_int_distribution<uint64_t>( range_from, range_to );
     return true;
+}
+
+/**
+ * Gets the set lower bound of the Randomiser
+ * @return Lower bound
+ */
+uint64_t genomeMaker::Randomiser::getLowerBound() {
+    return _lower_bound;
+}
+
+/**
+ * Gets the set upper bound of the Randomiser
+ * @return Upper bound
+ */
+uint64_t genomeMaker::Randomiser::getUpperBound() {
+    return  _upper_bound;
+}
+
+/**
+ * Gets a random number from the pool
+ * @return Random number from pool
+ */
+unsigned long genomeMaker::Randomiser::getRand() {
+    return _distribution( _rng );
 }
