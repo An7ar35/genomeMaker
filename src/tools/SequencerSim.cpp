@@ -107,7 +107,7 @@ uint64_t genomeMaker::SequencerSim::calcReadCount( const std::streampos &genome_
  * @return Upper bound number for the eroneous reads
  */
 uint64_t genomeMaker::SequencerSim::calcErrorUpperBound( const uint64_t &reads_total, const double &error_rate ) const {
-    //TODO clean all of this.. horrible hackety-hack prone to failing miserably when a file size is extremely large and the error rate high too
+    //TODO clean all of this.. horrible hackety-hack prone to failing miserably when a file size is extremely large and the error rate is high too
     unsigned count { 0 };
     double   err   { error_rate };
     double   part  { 0 };
@@ -317,8 +317,6 @@ bool genomeMaker::SequencerSim::sequenceGenomeChunk( const size_t &read_length,
                                                      const uint64_t &read_count,
                                                      std::stack<uint64_t> &erroneous_read_indices,
                                                      Buffers &buffer ) {
-    //TODO use the error randomiser to check if error read or not
-    //TODO then create random error based on read size
     try {
         size_t max_begin_index = calcMaxIndex( buffer._current_size, buffer._next_size, read_length );
         _read_randomiser.setPoolRange( 0, max_begin_index ); //so that we get full read_length reads only
@@ -327,15 +325,22 @@ bool genomeMaker::SequencerSim::sequenceGenomeChunk( const size_t &read_length,
         LOG_DEBUG( "[genomeMaker::SequencerSim::sequenceGenomeChunk(..)] Reads to do on chunk.: ", read_count );
         LOG_DEBUG( "[genomeMaker::SequencerSim::sequenceGenomeChunk(..)] Pool range set to....: 0-", max_begin_index );
         //Sequencing...
-        uint64_t reads_done = { 0 };
+        Randomiser error_randomiser( 0, read_length - 1 );
+        uint64_t   reads_done  { 0 };
+        bool       error_flag  { false };
+        size_t     error_index { 0 };
+        char       error_char  { 0 };
+
         while( reads_done < read_count ) {
-            //Getting read from buffer
             _total_reads_completed++;
+            //Checking if read is erroneous
             if( !erroneous_read_indices.empty() && erroneous_read_indices.top() == _total_reads_completed ) {
-                //TODO
-                LOG_TRACE( "Injecting error in read #", erroneous_read_indices.top() );
                 erroneous_read_indices.pop();
+                error_index = error_randomiser.getRand();
+                LOG_TRACE( "[genomeMaker::SequencerSim::sequenceGenomeChunk(..)] Read #", _total_reads_completed, " marked for being erroneous." );
+                error_flag  = true;
             }
+            //Getting read from buffer
             size_t start_index = _read_randomiser.getRand();
             std::stringstream ss;
             ss << ">read#" << _total_reads_completed << "\n";
@@ -343,16 +348,23 @@ bool genomeMaker::SequencerSim::sequenceGenomeChunk( const size_t &read_length,
                 if( i > 0 && i % _LINE_SIZE == 0 ) {
                     ss << "\n";
                 }
-                //TODO inject errors (error % variable needed)
-                if( start_index + i < buffer._current_size ) {
-                    ss << buffer._current->at( start_index + i );
-                } else { //read overlaps with the 'next' buffer
-                    ss << buffer._next->at( start_index + i - buffer._current_size );
+                char c = getCharAt( buffer, start_index, i );
+                if( error_flag && i == error_index ) {
+                    size_t count { read_length };
+                    do {
+                        error_char = getCharAt( buffer, start_index, error_randomiser.getRand() );
+                    } while( count && error_char == c ); //Trying to get a different char than the one at position
+                    LOG_TRACE( "[genomeMaker::SequencerSim::sequenceGenomeChunk(..)] Injected error ('", error_char,
+                               "') in read #", _total_reads_completed, " at position ", i , " ('", c, "')." );
+                    ss << error_char;
+                    error_flag = false;
+                } else {
+                    ss << c;
                 }
             }
             ss << "\n\n";
             //Writing read to sequencer file
-            if( !_writer.write( ss.str())) {
+            if( !_writer.write( ss.str() ) ) {
                 LOG_ERROR( "[genomeMaker::SequencerSim::sequenceGenomeChunk(..)] Error occurred whilst writing read ",
                            reads_done, "/", read_count, " of genome chunk to file '", _writer.getFileName(), "'." );
                 std::cerr << "Error: could not write read #" << _total_reads_completed << " to sequencer file: " << std::endl;
@@ -365,5 +377,20 @@ bool genomeMaker::SequencerSim::sequenceGenomeChunk( const size_t &read_length,
         return true;
     } catch ( std::out_of_range e ) {
         return false;
+    }
+}
+
+/**
+ * Gets a single character from a read starting in the current buffer
+ * @param buffer  Buffer object
+ * @param start_i Start index of the read
+ * @param read_i  Index within the read
+ * @return Character at position
+ */
+char genomeMaker::SequencerSim::getCharAt( const Buffers &buffer, const size_t &start_i, const size_t &read_i ) const {
+    if( start_i + read_i < buffer._current_size ) {
+        return buffer._current->at( start_i + read_i );
+    } else { //read overlaps with the 'next' buffer
+        return buffer._next->at( start_i + read_i - buffer._current_size );
     }
 }

@@ -49,6 +49,9 @@ namespace genomeMaker {
                                   const uint64_t &read_count,
                                   std::stack<uint64_t> &erroneous_read_indices,
                                   Buffers &buffer );
+        char getCharAt( const Buffers &buffer,
+                        const size_t &start_i,
+                        const size_t &read_i ) const;
         //Private variables
         static const size_t _LINE_SIZE = 71; //per line max char write in sequencer file output
         eadlib::io::FileReader &_reader;
