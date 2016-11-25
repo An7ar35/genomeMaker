@@ -83,7 +83,6 @@ void genomeMaker::cli::loadOptionsIntoContainer( const eadlib::cli::Parser &pars
     if( parser.getValueFlags( "-size" ).at( 0 ) ) {
         options._genome_flag = true;
         options._genome_size = converter.string_to_type<uint64_t>( parser.getValues( "-size" ).at( 0 ) );
-        LOG( "What?" );
     }
     if( parser.getValueFlags( "-type" ).at( 0 ) ) {
         std::string val = parser.getValues( "-type" ).at( 0 );

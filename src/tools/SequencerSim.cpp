@@ -108,6 +108,7 @@ uint64_t genomeMaker::SequencerSim::calcReadCount( const std::streampos &genome_
  */
 uint64_t genomeMaker::SequencerSim::calcErrorUpperBound( const uint64_t &reads_total, const double &error_rate ) const {
     //TODO clean all of this.. horrible hackety-hack prone to failing miserably when a file size is extremely large and the error rate is high too
+    if( error_rate == 0 ) return 0;
     unsigned count { 0 };
     double   err   { error_rate };
     double   part  { 0 };
