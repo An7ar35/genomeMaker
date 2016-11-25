@@ -1,13 +1,13 @@
 cmake_minimum_required(VERSION 3.5)
 project(genomeMaker)
 
+
 #// Project flags
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_FLAGS " ${CMAKE_CXX_FLAGS} -std=c++14 -pthread")
 #// Setting the build output to ./build
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/builds/")
-
 
 #// GenomeMaker build
 set(SOURCE_FILES
@@ -27,9 +27,6 @@ include_directories(include)
 add_executable(
         genomeMaker
         ${SOURCE_FILES})
-
-target_link_libraries(genomeMaker ${CURSES_LIBRARIES})
-
 
 #// GTest framework for unit testing
 enable_testing()
