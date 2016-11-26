@@ -32,22 +32,19 @@ add_executable(
 enable_testing()
 find_package(GTest QUIET)
 
-if( GTest )
+if( GTEST_FOUND )
     include_directories(${GTEST_INCLUDE_DIRS})
-
     set(TEST_FILES
-            tests/Creator_tests.cpp
+            tests/GenomeCreator_Tests.cpp
             tests/main.cpp
             tests/MOCK_Randomiser.h
             tests/MOCK_Writer.h
             tests/MOCK_Reader.h
-            tests/SequencerSim_Tests.h)
-
+            tests/SequencerSim_Tests.cpp)
     add_executable(
             genomeMaker_Tests
             ${TEST_FILES})
-
-    target_link_libraries(genomeMaker_Tests gtest ${CURSES_LIBRARIES})
+    target_link_libraries(genomeMaker_Tests gtest)
     add_test(genomeMaker_Tests ${TEST_FILES})
 else()
     message(WARNING, "Google Test package not found. Unit tests will not be compiled...")
