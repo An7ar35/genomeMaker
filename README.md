@@ -76,6 +76,17 @@ The error rate is based on the number of expected reads on a genome. i.e.: if th
 error rate is set to 0.01 (1%) and the expected reads number is 75,000 then there
 would be an error injected in 750 reads taken approximately.
 
+Currently the error injection is very basic: when a read is tagged for being 
+injected with an error a position within the read is randomly chosen to be
+replaced with a different character based on another random pick within the
+same read.
+
+So let's say that we have a read flagged for an error { AACCTT }: 
+- a random position for the error is chosen (2),
+- a random position for a replacement is chosen (4) and will be 
+  accepted if it is a different character ('C' != 'T'). Otherwise it tries again.
+The resulting read writen to the FASTA file is { AATCTT }.
+
 ##### Example #####
 To create a sequencer file named "_my_reads.fasta_" with the default read length
 of 260, error rate of 0.01, depth of 200 and based on a genome file
